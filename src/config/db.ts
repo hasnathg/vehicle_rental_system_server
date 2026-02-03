@@ -5,7 +5,7 @@ import path from "path"
 dotenv.config({path: path.join(process.cwd(), '.env')});
 
 export const pool = new Pool({
-    connectionString : '&{process.env.CONNECTION_STR}',
+    connectionString : process.env.CONNECTION_STR,
 })
 
 export const initDB = async()=>{
