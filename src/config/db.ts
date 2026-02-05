@@ -1,14 +1,15 @@
 import { Pool } from "pg";
 import dotenv from 'dotenv';
 import path from "path"
+import config from ".";
 
 dotenv.config({path: path.join(process.cwd(), '.env')});
 
 export const pool = new Pool({
-    connectionString : process.env.CONNECTION_STR,
+    connectionString : `${config.connection_str}`,
 })
 
-export const initDB = async()=>{
+const initDB = async()=>{
     await pool.query(`
         CREATE EXTENSION IF NOT EXISTS citext;
         `)
@@ -46,4 +47,6 @@ export const initDB = async()=>{
         CHECK (rent_end_date > rent_start_date  )
         );
         `);
-    }
+    };
+
+    export default initDB;

@@ -1,9 +1,22 @@
-import { Request, Response, Router } from "express";
-import { userController } from "./users.controllers";
+import express, { Request, Response } from "express";
+import { pool } from "../../config/db";
 
-const router = Router()
+import { userServices } from "./users.services";
+import { userControllers } from "./users.controllers";
 
-router.post('/', userController.createUser)
+const router = express.Router();
+
+router.post('/', userControllers.createUser);
+
+router.get("/", userControllers.getUser);
+
+router.get("/:id", userControllers.getSingleUser);
+
+router.put("/:id", userControllers.updateUser);
+
+router.delete("/:id", userControllers.deleteUser);
 
 
-export const usersRoute = router
+
+
+export const usersRoute = router;
