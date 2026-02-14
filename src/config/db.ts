@@ -1,12 +1,10 @@
 import { Pool } from "pg";
-import dotenv from 'dotenv';
-import path from "path"
 import config from ".";
 
-dotenv.config({path: path.join(process.cwd(), '.env')});
 
 export const pool = new Pool({
-    connectionString : `${config.connection_str}`,
+    connectionString : config.connection_str,
+    ssl: { rejectUnauthorized: true},
 })
 
 const initDB = async()=>{
@@ -30,20 +28,20 @@ const initDB = async()=>{
         vehicle_name TEXT NOT NULL,
         type TEXT NOT NULL CHECK (type IN ('car', 'bike', 'van', 'SUV')),
         registration_number TEXT NOT NULL UNIQUE,
-        daily_rent_price NUMERIC NOT NULL CHECK (daily_rent_price > 0),
-        availability_status TEXT NOT NULL CHECK (availability_status IN ('available', 'booked'))
+        daily_rent_price NUMERIC(10,2) NOT NULL CHECK (daily_rent_price > 0),
+        availability_status TEXT NOT NULL DEFAULT 'available' CHECK (availability_status IN ('available', 'booked'))
         );
         `);
 
     await pool.query(`
         CREATE TABLE IF NOT EXISTS bookings(
         id SERIAL PRIMARY KEY,
-        customer_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-        vehicle_id INTEGER REFERENCES vehicles(id) ON DELETE CASCADE,
+        customer_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        vehicle_id INTEGER NOT NULL REFERENCES vehicles(id) ON DELETE CASCADE,
         rent_start_date DATE NOT NULL,
         rent_end_date DATE NOT NULL,
-        total_price NUMERIC NOT NULL CHECK (total_price > 0),
-        status TEXT NOT NULL CHECK (status IN ('active', 'cancelled', 'returned')),
+        total_price NUMERIC(10,2) NOT NULL CHECK (total_price > 0),
+        status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'cancelled', 'returned')),
         CHECK (rent_end_date > rent_start_date  )
         );
         `);

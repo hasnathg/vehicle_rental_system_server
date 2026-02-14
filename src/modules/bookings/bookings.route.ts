@@ -8,11 +8,11 @@ router.post('/', bookingControllers.createBooking);
 
 router.get('/', bookingControllers.getBooking);
 
-router.get('/:id', bookingControllers.getSingleBooking);
+router.get('/:bookingId', bookingControllers.getSingleBooking);
 
-router.put('/:id', bookingControllers.updateBooking);
+router.put('/:bookingId', bookingControllers.updateBooking);
 
-router.delete('/:id', bookingControllers.deleteBooking);
+router.delete('/:bookingId', bookingControllers.deleteBooking);
 
 
 

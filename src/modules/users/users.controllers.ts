@@ -1,12 +1,24 @@
 import { Request, Response } from "express";
-import { pool } from "../../config/db";
+import bcrypt from "bcrypt"
 import { userServices } from "./users.services";
 
+const BCRYPT_SALT_ROUNDS = 10;
 
 
 const createUser = async(req : Request, res : Response)=>{
     try{
         const { name, email, password, phone, role} = req.body;
+
+        if (!name || !email || !password || !phone || !role) {
+        return res.status(400).json({
+            success: false,
+            message: "Validation error",
+            errors: "name, email, password, phone, role are required",
+        });
+        }   
+
+        const passwordHash = await bcrypt.hash(String(password), BCRYPT_SALT_ROUNDS);
+ 
     const result = await userServices.createUser(name, email, password, phone, role);
 
     return res.status(201).json({
@@ -28,8 +40,8 @@ const getUser = async (req: Request, res: Response) => {
         const result = await userServices.getUser();
         res.status(200).json({
             success: true,
-            message: "user retrieved succefully",
-            data: result.rows,
+            message: result.length ? "user retrieved succefully" : "No users found",
+            data: result,
         });
 
     } catch (err: any){
@@ -43,12 +55,22 @@ const getUser = async (req: Request, res: Response) => {
 
 const getSingleUser = async(req: Request, res: Response) => {
     try{
-        const result = await userServices.getSingleUser(req.params.id as string);
+        const userId = Number(req.params.userId);
+        if (Number.isNaN(userId)) {
+        return res.status(400).json({
+        success: false,
+        message: "Validation error",
+        errors: "userId must be a number",
+      });
+    }
 
-        if(result.rows.length === 0){
+        const result = await userServices.getSingleUser(userId);
+
+        if(!result){
             res.status(404).json({
                 success: false,
                 message: "User not found",
+                errors: "User not found",
             });
         } else{
             res.status(200).json({
@@ -67,39 +89,70 @@ const getSingleUser = async(req: Request, res: Response) => {
 };
 
 const updateUser = async(req: Request, res: Response) => {
-    const {name, email, password, phone, role} = req.body;
     try{
-        const result = await userServices.updateUser(name, email, password, phone, role, req.params.id as string);
+        const userId = Number(req.params.userId);
+        if (Number.isNaN(userId)){
+            return res.status(400).json({
+                success: false,
+                message: "Validation error",
+                errors: "userId must be a number",
+            });
+        }
+        
+        const { name, email, password, phone, role } = req.body;
 
-        if(result.rows.length === 0){
+        const payload: any = {};
+        if (name !== undefined) payload.name = String(name);
+        if (email !== undefined) payload.email = String(email);
+        if (phone !== undefined) payload.phone = String(phone);
+        if (role !== undefined) payload.role = String(role);
+
+        if (password !== undefined && String(password).length > 0) {
+        payload.passwordHash = await bcrypt.hash(String(password), BCRYPT_SALT_ROUNDS);
+        }
+
+        const result = await userServices.updateUser(userId, payload);
+
+        if(!result){
             res.status(404).json({
                 success: false,
                 message: "User not found",
+                errors: "User not found",
             });
         } else{
             res.status(200).json({
                 status: true,
                 message: "User updated succesfully",
-                data: result.rows[0],
+                data: result,
             });
         }
 
     } catch (err: any) {
         res.status(500).json({
             status: false,
-            message: err.message,
+            message: "Internal server erroe",
+            errors: err.message,
         });
     }
 };
 
 const deleteUser = async(req: Request, res: Response) => {
     try{
-        const result = await userServices.deleteUser(req.params.id as string);
+        const userId = Number(req.params.userId);
+    if (Number.isNaN(userId)) {
+      return res.status(400).json({
+        success: false,
+        message: "Validation error",
+        errors: "userId must be a number",
+      });
+    }
+        const result = await userServices.deleteUser(userId);
 
-        if(result.rowCount === 0){
+        if(result === 0){
             res.status(404).json({
                 success: false,
                 message: "User not found",
+                errors: "User not found",
             });
         } else{
             res.status(200).json({
@@ -112,7 +165,8 @@ const deleteUser = async(req: Request, res: Response) => {
     } catch (err: any) {
         res.status(500).json({
             status: false,
-            message: err.message,
+            message: "Internal server erroe",
+            errors: err.message,
         });
     }
 }
