@@ -17,13 +17,13 @@ const createVehicle = async(req: Request, res: Response ) => {
       });
     }
       const result = await vehicleServices.createVehicle(vehicle_name, type, registration_number, Number(daily_rent_price), availability_status)  ;
-      res.status(201).json({
+      return res.status(201).json({
         success: true,
-        message: "Vehicles created",
+        message: "Vehicles created successfully",
         data: result,
       });
     } catch(err: any){
-        res.status(500).json({
+        return res.status(500).json({
             success: false,
             message: "Internal server error",
             errors: err.message,
@@ -41,11 +41,10 @@ const getVehicle = async (req: Request, res: Response) => {
         });
 
     } catch (err: any){
-        res.status(500).json({
+        return res.status(500).json({
             sussess: false,
             message: "Internal server error",
             errors: err.message,
-            details: err,
         });
     }
 };
@@ -64,23 +63,23 @@ const getSingleVehicle = async(req: Request, res: Response) => {
         const result = await vehicleServices.getSingleVehicle(vehicleId) ;
 
         if(!result){
-            res.status(404).json({
+            return res.status(404).json({
                 success: false,
                 message: "Vehicle not found",
                 errors: "Vehicle not found",
             });
-        } else{
-            res.status(200).json({
+        } 
+            return res.status(200).json({
                 success: true,
-                message: "Vehicle fetched succesfully",
+                message: "Vehicle retrived succesfully",
                 data: result,
             });
-        }
+        
 
     } catch (err: any) {
-        res.status(500).json({
-            status: false,
-            message: err.message,
+        return res.status(500).json({
+            success: false,
+            message: "Internal server error",
             errors: err.message,
         });
     }
@@ -110,22 +109,22 @@ const updateVehicle = async(req: Request, res: Response) => {
         const result = await vehicleServices.updateVehicle(vehicleId, payload);
 
         if(!result){
-            res.status(404).json({
+            return res.status(404).json({
                 success: false,
                 message: "Vehicle not found",
                 errors: "Vehicle not found",
             });
-        } else{
-            res.status(200).json({
-                status: true,
+        }
+            return res.status(200).json({
+                success: true,
                 message: "Vehicle updated succesfully",
                 data: result,
             });
-        }
+        
 
     } catch (err: any) {
-        res.status(500).json({
-            status: false,
+        return res.status(500).json({
+            success: false,
             message: "Internal server error",
             errors: err.message,
         });
@@ -146,23 +145,25 @@ const deleteVehicle = async(req: Request, res: Response) => {
         const result = await vehicleServices.deleteVehicle(vehicleId);
 
         if(!result){
-            res.status(404).json({
+            return res.status(404).json({
                 success: false,
                 message: "Vehicle not found",
                 errors: "Vehicle not found",
             });
-        } else{
-            res.status(200).json({
-                status: true,
+        } 
+            return res.status(200).json({
+                success: true,
                 message: "Vehicle deleted succesfully",
                 data: null,
             });
-        }
+        
 
     } catch (err: any) {
-        res.status(500).json({
-            status: false,
-            message: "Internal server error",
+        const msg = String(err.message || "");
+        const isBadRequest = msg.includes("Cannot delete vehicle with active bookings");
+        return res.status(isBadRequest ? 400 : 500).json({
+            success: false,
+            message: isBadRequest ? "Bad request" :  "Internal server error",
             errors: err.message,
         });
     }

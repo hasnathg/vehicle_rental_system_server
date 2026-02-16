@@ -5,6 +5,7 @@ import config from "./config";
 import { usersRoute } from "./modules/users/users.route";
 import { vehiclesRoute } from "./modules/vehicles/vehicles.route";
 import { bookingsRoute } from "./modules/bookings/bookings.route";
+import { authRoute } from "./modules/auth/auth.route";
 
 const app = express();
 app.use(express.json());
@@ -16,6 +17,9 @@ app.get('/',(req : Request, res : Response)=>{
         path : req.path
     })
 });
+
+app.use("/api/v1/auth", authRoute);
+
 
 app.use('/api/v1/users', usersRoute );
 

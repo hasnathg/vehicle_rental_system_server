@@ -1,5 +1,7 @@
 import { pool } from "../../config/db";
 
+type UserRole = "admin" | "customer";
+
 const BOOKING_PUBLIC_FIELDS = "id, customer_id, vehicle_id, rent_start_date, rent_end_date, total_price, status";
 
 function diffDaysInclusive(start: Date, end: Date): number {
@@ -8,6 +10,22 @@ function diffDaysInclusive(start: Date, end: Date): number {
     const diff = endUTC - startUTC;
     return Math.ceil(diff / (1000 * 60 * 60 * 24));
 }
+
+const autoReturnExpired = async () => {
+  await pool.query(`
+    WITH expired AS (
+      UPDATE bookings
+      SET status = 'returned'
+      WHERE status = 'active'
+        AND rent_end_date < CURRENT_DATE
+      RETURNING vehicle_id
+    )
+    UPDATE vehicles v
+    SET availability_status = 'available'
+    FROM (SELECT DISTINCT vehicle_id FROM expired) e
+    WHERE v.id = e.vehicle_id;
+  `);
+};
 
 const createBooking = async(customer_id: number, vehicle_id: number, rent_start_date: Date , rent_end_date: Date) => {
     const client = await pool.connect();
@@ -61,22 +79,63 @@ const createBooking = async(customer_id: number, vehicle_id: number, rent_start_
         };
 
     }catch (err){
-        await client.query("ROOLBACK");
+        await client.query("ROLLBACK");
         throw err;
     } finally{
         client.release();
     }
 };
 
+
 const getBooking = async() => {
-    const result = await pool.query(`SELECT ${BOOKING_PUBLIC_FIELDS} FROM bookings ORDER BY id desc`);
+    await autoReturnExpired();
+    const result = await pool.query(`SELECT ${BOOKING_PUBLIC_FIELDS} FROM bookings ORDER BY id DESC`);
     return result.rows;
 };
 
+const getBookingsForAdmin = async () => {
+  await autoReturnExpired();
+  const result = await pool.query(
+    `SELECT ${BOOKING_PUBLIC_FIELDS} FROM bookings ORDER BY id DESC`
+  );
+  return result.rows;
+};
+
+const getBookingsForCustomer = async (customerId: number) => {
+  await autoReturnExpired();
+  const result = await pool.query(
+    `SELECT ${BOOKING_PUBLIC_FIELDS}
+     FROM bookings
+     WHERE customer_id = $1
+     ORDER BY id DESC`,
+    [customerId]
+  );
+  return result.rows;
+};
+
 const getSingleBooking = async(bookingId: number) =>{
-    const result = await pool.query(`SELECT ${BOOKING_PUBLIC_FIELDS} FROM vehicles WHERE id=$1`, [bookingId]);
+    await autoReturnExpired();
+    const result = await pool.query(`SELECT ${BOOKING_PUBLIC_FIELDS} FROM bookings WHERE id=$1`, [bookingId]);
 
     return result.rows[0] ?? null;
+};
+
+const getSingleBookingScoped = async (
+  bookingId: number,
+  role: UserRole,
+  userId: number
+) => {
+  await autoReturnExpired();
+
+  const query =
+    role === "admin"
+      ? `SELECT ${BOOKING_PUBLIC_FIELDS} FROM bookings WHERE id=$1`
+      : `SELECT ${BOOKING_PUBLIC_FIELDS} FROM bookings WHERE id=$1 AND customer_id=$2`;
+
+  const params = role === "admin" ? [bookingId] : [bookingId, userId];
+
+  const result = await pool.query(query, params);
+  return result.rows[0] ?? null;
 };
 
 const updateBooking = async(bookingId: number, status: string) => {
@@ -135,10 +194,96 @@ const updateBooking = async(bookingId: number, status: string) => {
     }
 };
 
+const updateBookingScoped = async (
+  bookingId: number,
+  status: string,
+  role: UserRole,
+  userId: number
+) => {
+  const client = await pool.connect();
+
+  try {
+    await client.query("BEGIN");
+
+    await client.query(`
+      WITH expired AS (
+        UPDATE bookings
+        SET status = 'returned'
+        WHERE status = 'active'
+          AND rent_end_date < CURRENT_DATE
+        RETURNING vehicle_id
+      )
+      UPDATE vehicles v
+      SET availability_status = 'available'
+      FROM (SELECT DISTINCT vehicle_id FROM expired) e
+      WHERE v.id = e.vehicle_id;
+    `);
+
+    const bookingRes = await client.query(
+      `SELECT id, customer_id, vehicle_id, rent_start_date, status
+       FROM bookings
+       WHERE id = $1
+       FOR UPDATE`,
+      [bookingId]
+    );
+
+    if ((bookingRes.rowCount ?? 0) === 0) return null;
+
+    const booking = bookingRes.rows[0];
+
+    if (role === "customer" && booking.customer_id !== userId) {
+      throw new Error("Forbidden: cannot modify another user's booking");
+    }
+
+    if (status !== "cancelled" && status !== "returned") {
+      throw new Error("Invalid status update");
+    }
+
+    if (status === "cancelled") {
+      const today = new Date();
+      const start = new Date(booking.rent_start_date);
+
+      const todayUTC = Date.UTC(today.getFullYear(), today.getMonth(), today.getDate());
+      const startUTC = Date.UTC(start.getFullYear(), start.getMonth(), start.getDate());
+      if (todayUTC >= startUTC) {
+        throw new Error("Cannot cancel booking after start date");
+      }
+    }
+    const updatedRes = await client.query(
+      `UPDATE bookings
+       SET status = $1
+       WHERE id = $2
+       RETURNING ${BOOKING_PUBLIC_FIELDS}`,
+      [status, bookingId]
+    );
+
+    await client.query(
+      `UPDATE vehicles SET availability_status = 'available' WHERE id = $1`,
+      [booking.vehicle_id]
+    );
+
+    await client.query("COMMIT");
+
+    if (status === "returned") {
+      return {
+        ...updatedRes.rows[0],
+        vehicle: { availability_status: "available" },
+      };
+    }
+
+    return updatedRes.rows[0];
+  } catch (err) {
+    await client.query("ROLLBACK");
+    throw err;
+  } finally {
+    client.release();
+  }
+};
+
 const deleteBooking = async(bookingId: number) => {
     const result = await pool.query(`DELETE FROM bookings WHERE id=$1`, [bookingId]);
 
-    return result.rowCount;
+    return result.rowCount ?? 0;
 };
 
 
@@ -148,4 +293,9 @@ export const bookingServices = {
     getSingleBooking,
     updateBooking,
     deleteBooking,
+
+  getBookingsForAdmin,
+  getBookingsForCustomer,
+  getSingleBookingScoped,
+  updateBookingScoped,
 }

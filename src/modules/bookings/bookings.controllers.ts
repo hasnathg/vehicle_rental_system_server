@@ -8,13 +8,21 @@ const createBooking = async(req: Request, res: Response)=>{
         const {customer_id, vehicle_id, rent_start_date, rent_end_date} = req.body;
 
        if (customer_id === undefined || vehicle_id === undefined || !rent_start_date || !rent_end_date){
-        res.status(400).json({
+        return res.status(400).json({
         success: false,
         message: "Validation error",
         errors: "customer_id, vehicle_id, rent_start_date, rent_end_date are required",
        });
 
        }
+
+        if (req.user?.role === "customer" && Number(customer_id) !== req.user.id) {
+      return res.status(403).json({
+        success: false,
+        message: "Forbidden",
+        errors: "Customers can only create bookings for themselves",
+      });
+    }
 
        const result = await bookingServices.createBooking(
         Number(customer_id), Number(vehicle_id), new Date(rent_start_date), new Date(rent_end_date)
@@ -41,10 +49,12 @@ const createBooking = async(req: Request, res: Response)=>{
 
 const getBooking = async(req: Request, res: Response)=>{
     try{
-       const result = await bookingServices.getBooking() ;
-       res.status(200).json({
+        const user = req.user!;
+       const result = user.role === "admin" ? await bookingServices.getBookingsForAdmin() : await bookingServices.getBookingsForCustomer(user.id) ;
+
+       return res.status(200).json({
         success: true,
-        message: result.length ? "Bookings retrived succesfully" : "No booking found",
+        message: result.length ? "Bookings retrived succesfully" : "Your bookings retrieved successfully",
         data: result,
        });
     }catch(err: any){
@@ -69,7 +79,8 @@ const getSingleBooking = async(req: Request, res: Response) => {
             });
         }
         
-        const result = await bookingServices.getSingleBooking(bookingId) ;
+        const user = req.user!;
+        const result = await bookingServices.getSingleBookingScoped(bookingId, user.role, user.id) ;
 
       if(!result){
         return res.status(404).json({
@@ -77,16 +88,16 @@ const getSingleBooking = async(req: Request, res: Response) => {
             message: "Bookings not found",
             errors: "Booking not found",
         });
-      } else {
-        res.status(200).json({
-            status: true,
+      }
+        return res.status(200).json({
+            success: true,
             message: "Booking retrieved successfully",
             data: result,
         });
-      }
+      
     } catch (err: any){
         return res.status(500).json({
-            status: false,
+            success: false,
             message: "Internal server error",
             errors: err.message,
         });
@@ -113,7 +124,29 @@ const updateBooking = async(req: Request, res: Response) => {
         errors: "status is required",
       });
     }
-        const result = await bookingServices.updateBooking(bookingId, String(status)) ;
+
+    const user = req.user!;
+    const statusStr = String(status);
+
+    if (user.role === "customer" && statusStr !== "cancelled") {
+      return res.status(403).json({
+        success: false,
+        message: "Forbidden",
+        errors: "Customers can only cancel bookings",
+      });
+    }
+    if (user.role === "admin" && statusStr !== "returned") {
+      return res.status(403).json({
+        success: false,
+        message: "Forbidden",
+        errors: "Admins can only mark bookings as returned",
+      });
+    }
+
+
+        const result = await bookingServices.updateBookingScoped(bookingId,  statusStr,
+      user.role,
+      user.id) ;
 
         if(!result){
             return res.status(404).json({
@@ -121,19 +154,20 @@ const updateBooking = async(req: Request, res: Response) => {
                 message: "Bookings not found",
                 errors: "Bookings not found",
             });
-        } else{
-            res.status(200).json({
+        } 
+            return res.status(200).json({
                 success: true,
-                message: status === "returned" ? "Booking marked as returned. Vehicle is now available" : "Bookings updated successfully",
+                message: statusStr === "returned" ? "Booking marked as returned. Vehicle is now available" : "Bookings cancelled successfully",
                 data: result,
             });
-        }
+        
 
     } catch(err: any){
         const msg = String(err.message || "");
         const isBadRequest = msg.includes("Invalid status") || msg.includes("Cannot cancel booking after start date");
+
         return res.status(isBadRequest ? 400 : 500).json({
-            status: false,
+            success: false,
             message: isBadRequest ? "Bad request" : "Internal server error",
             errors: err.message,
         });
@@ -142,6 +176,14 @@ const updateBooking = async(req: Request, res: Response) => {
 
 const deleteBooking = async(req: Request, res: Response) => {
     try{
+
+         if (req.user?.role !== "admin") {
+      return res.status(403).json({
+        success: false,
+        message: "Forbidden",
+        errors: "Admin access required",
+      });
+    }
         const bookingId = Number(req.params.bookingId);
     if (Number.isNaN(bookingId)) {
       return res.status(400).json({
@@ -159,16 +201,16 @@ const deleteBooking = async(req: Request, res: Response) => {
             message: "Bookings not found",
             errors: "Bookings not found",
         });
-       } else{
+       } 
         return res.status(200).json({
-            status: true,
+            success: true,
             message: "Booking deleted successfully",
             data: null,
         });
-       }
+       
     } catch (err: any){
         res.status(500).json({
-            status: false,
+            success: false,
             message: "Internal server error",
             errors: err.message,
         });

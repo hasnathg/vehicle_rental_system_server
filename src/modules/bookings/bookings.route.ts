@@ -1,18 +1,19 @@
 import express from "express";
 import { bookingControllers } from "./bookings.controllers";
+import { requireAuth } from "../../middleware/auth";
 
 
 const router = express.Router();
 
-router.post('/', bookingControllers.createBooking);
+router.post('/', requireAuth, bookingControllers.createBooking);
 
-router.get('/', bookingControllers.getBooking);
+router.get('/', requireAuth, bookingControllers.getBooking);
 
-router.get('/:bookingId', bookingControllers.getSingleBooking);
+router.get('/:bookingId', requireAuth,  bookingControllers.getSingleBooking);
 
-router.put('/:bookingId', bookingControllers.updateBooking);
+router.put('/:bookingId', requireAuth, bookingControllers.updateBooking);
 
-router.delete('/:bookingId', bookingControllers.deleteBooking);
+router.delete('/:bookingId', requireAuth,  bookingControllers.deleteBooking);
 
 
 

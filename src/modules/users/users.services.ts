@@ -12,7 +12,7 @@ const createUser = async(name: string, email: string, passwordHash: string, phon
 };
 
 const getUser = async()=>{
-    const result = await pool.query(`SELECT ${USER_PUBLIC_FIELD} FROM users ORDER BY DESC`);
+    const result = await pool.query(`SELECT ${USER_PUBLIC_FIELD} FROM users ORDER BY id DESC`);
     return result.rows;
 };
 
@@ -43,13 +43,20 @@ const updateUser = async(userId: number, payload:Partial<{name: string, email: s
         return result.rows[0];
      } 
 
-    const result = await pool.query(`UPDATE users SET name=$1, email=$2, phone=$3, role=$ WHERE id=$5 RETURNING ${USER_PUBLIC_FIELD}`, [name, email, phone, role, userId
+    const result = await pool.query(`UPDATE users SET name=$1, email=$2, phone=$3, role=$4 WHERE id=$5 RETURNING ${USER_PUBLIC_FIELD}`, [name, email, phone, role, userId
         ]);
 
     return result.rows[0];
 };
 
 const deleteUser = async(userId: number) => {
+    const activeRes = await pool.query(
+        `SELECT 1 FROM bookings WHERE customer_id = $1 AND status = 'active' LIMIT 1`, [userId]
+    );
+
+    if ((activeRes.rowCount ?? 0) > 0 ){
+        throw new Error("Cannot delete user with active bookings");
+    }
     const result = await pool.query(`DELETE FROM users WHERE id=$1`, [userId]
     );
 
