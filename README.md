@@ -1,7 +1,7 @@
 Vehicle Rental System API
 
-Live API:
-GitHub: https://github.com/hasnathg/vehicle_rental_system_server
+- Live API: https://vehicle-rental-system-server-i8l5.onrender.com
+- GitHub: https://github.com/hasnathg/vehicle_rental_system_server
 
 ## Project Overview
 
@@ -17,41 +17,41 @@ This API is built with a **modular architecture** using controllers, services, a
 
 ---
 
-##  Features
+## Features
 
--  **Authentication & Authorization**
-  - User signup & signin
-  - JWT-based authentication
-  - Role-based access control (Admin / Customer)
+- **Authentication & Authorization**
+- User signup & signin
+- JWT-based authentication
+- Role-based access control (Admin / Customer)
 
--  **Users**
-  - Admin: View, update, delete users
-  - Customer: Update own profile
-  - Cannot delete users with active bookings
+- **Users**
+- Admin: View, update, delete users
+- Customer: Update own profile
+- Cannot delete users with active bookings
 
--  **Vehicles**
-  - Admin: Create, update, delete vehicles
-  - Public: View all vehicles & single vehicle
-  - Cannot delete vehicles with active bookings
+- **Vehicles**
+- Admin: Create, update, delete vehicles
+- Public: View all vehicles & single vehicle
+- Cannot delete vehicles with active bookings
 
--  **Bookings**
-  - Customer/Admin: Create bookings
-  - Auto price calculation (daily rate × days)
-  - Vehicle availability auto-updated
-  - Customer: Cancel booking (before start date)
-  - Admin: Mark booking as returned
-  - Auto-return for expired bookings
+- **Bookings**
+- Customer/Admin: Create bookings
+- Auto price calculation (daily rate × days)
+- Vehicle availability auto-updated
+- Customer: Cancel booking (before start date)
+- Admin: Mark booking as returned
+- Auto-return for expired bookings
 
--  **Validations & Business Rules**
-  - Role validation (`admin` / `customer`)
-  - Vehicle type validation
-  - Price must be positive
-  - Date range validation
-  - Availability checks
+- **Validations & Business Rules**
+- Role validation (`admin` / `customer`)
+- Vehicle type validation
+- Price must be positive
+- Date range validation
+- Availability checks
 
 ---
 
-##  Technology Stack
+## Technology Stack
 
 - **Node.js**
 - **TypeScript**
@@ -64,62 +64,51 @@ This API is built with a **modular architecture** using controllers, services, a
 
 ## Setup Instructions
 
-Prerequisites
-Node.js
-PostgreSQL (a cloud DB like Neon)
-npm
+- Prerequisites
+- Node.js
+- PostgreSQL (a cloud DB like Neon)
+- npm
 
-### Clone the repository
+- ### Clone the repository
 
-```bash
-git clone https://github.com/hasnathg/vehicle_rental_system_server
-cd vehicle_rental_system_server
+- ```bash
 
-Install dependencies 
-npm install
+  ```
+- git clone https://github.com/hasnathg/vehicle_rental_system_server
+- cd vehicle_rental_system_server
 
-Configure Environment Variables
-PORT=5000
-CONNECTION_STR=your_postgres_connection_string
-JWT_SECRET=your_super_secret_key
-JWT_EXPIRES_IN=7d
+- Install dependencies
+- npm install
 
-Run Database Migrations / Initialize Tables
-npm run dev
+- Configure Environment Variables
+- PORT=5000
+- CONNECTION_STR=your_postgres_connection_string
+- JWT_SECRET=your_super_secret_key
+- JWT_EXPIRES_IN=7d
 
-How to Use the API
-Step 1: Register a User
+- Run Database Migrations / Initialize Tables
+- npm run dev
 
-POST /api/v1/auth/signup
-{
-  "name": "Admin User",
-  "email": "admin@example.com",
-  "password": "password123",
-  "phone": "0123456789",
-  "role": "admin"
-}
+- How to Use the API
+- Step 1: Register a User
 
-Step 2: Login
-POST /api/v1/auth/signin
+- POST /api/v1/auth/signup
 
-{
-  "email": "admin@example.com",
-  "password": "password123"
-}
+- Step 2: Login
+- POST /api/v1/auth/signin
 
-Step 3: Use Token for Protected Routes
-Authorization: Bearer YOUR_TOKEN_HERE
+- Step 3: Use Token for Protected Routes
+- Authorization: Bearer YOUR_TOKEN_HERE
 
-Step 4: Test Endpoints
+- Step 4: Test Endpoints
 
-Examples:
+- Examples:
 
-Create vehicle (Admin):
-POST /api/v1/vehicles
-Get all vehicles (Public):
-GET /api/v1/vehicles
-Create booking:
-POST /api/v1/bookings
-Get bookings:
-GET /api/v1/bookings
-
+- Create vehicle (Admin):
+- POST /api/v1/vehicles
+- Get all vehicles (Public):
+- GET /api/v1/vehicles
+- Create booking:
+- POST /api/v1/bookings
+- Get bookings:
+- GET /api/v1/bookings
