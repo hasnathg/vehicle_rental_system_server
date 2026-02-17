@@ -1,8 +1,7 @@
 Vehicle Rental System API
 
-**Live API:** 
-**GitHub Repository:** https://github.com/hasnathg/vehicle_rental_system_server
-
+Live API:
+GitHub: https://github.com/hasnathg/vehicle_rental_system_server
 
 ## Project Overview
 

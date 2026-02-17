@@ -18,11 +18,6 @@ const initDB = async()=>{
         email CITEXT NOT NULL UNIQUE,
         password TEXT NOT NULL CHECK (length(password) >=6),
         phone TEXT NOT NULL,
-        role TEXT NOT NULL CHECK (role IN ('admin', 'customer'))
-        );
-        `);
-
-    await pool.query(`
         CREATE TABLE IF NOT EXISTS vehicles(
         id SERIAL PRIMARY KEY,
         vehicle_name TEXT NOT NULL,
