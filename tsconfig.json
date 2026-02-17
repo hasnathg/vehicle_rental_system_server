@@ -7,9 +7,9 @@
 
     // Environment Settings
     // See also https://aka.ms/tsconfig/module
-    "module": "node16",
-    "target": "esnext",
-    "moduleResolution": "node16",
+    "module": "commonjs",
+    "target": "es2020",
+    "moduleResolution": "node",
     "types": ["node"],
     // For nodejs:
     // "lib": ["esnext"],

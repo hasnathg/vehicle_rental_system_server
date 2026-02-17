@@ -1,17 +1,20 @@
-import { Pool } from "pg";
-import config from "./index";
-
-
-export const pool = new Pool({
-    connectionString : config.connection_str,
-    ssl: { rejectUnauthorized: false},
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.pool = void 0;
+const pg_1 = require("pg");
+const index_1 = __importDefault(require("./index"));
+exports.pool = new pg_1.Pool({
+    connectionString: index_1.default.connection_str,
+    ssl: { rejectUnauthorized: false },
 });
-
-const initDB = async()=>{
-    await pool.query(`
+const initDB = async () => {
+    await exports.pool.query(`
         CREATE EXTENSION IF NOT EXISTS citext;
-        `)
-    await pool.query(`
+        `);
+    await exports.pool.query(`
         CREATE TABLE IF NOT EXISTS users(
         id SERIAL PRIMARY KEY,
         name VARCHAR(250) NOT NULL,
@@ -21,8 +24,7 @@ const initDB = async()=>{
          role TEXT NOT NULL CHECK (role IN ('admin', 'customer'))
         )
         `);
-
-    await pool.query(`
+    await exports.pool.query(`
     CREATE TABLE IF NOT EXISTS vehicles (
       id SERIAL PRIMARY KEY,
       vehicle_name TEXT NOT NULL,
@@ -33,8 +35,7 @@ const initDB = async()=>{
         CHECK (availability_status IN ('available', 'booked'))
     )
   `);
-
-    await pool.query(`
+    await exports.pool.query(`
         CREATE TABLE IF NOT EXISTS bookings(
         id SERIAL PRIMARY KEY,
         customer_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -46,6 +47,5 @@ const initDB = async()=>{
         CHECK (rent_end_date > rent_start_date  )
         );
         `);
-    };
-
-    export default initDB;
+};
+exports.default = initDB;

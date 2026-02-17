@@ -29,7 +29,7 @@ const createUser = async(req : Request, res : Response)=>{
 
         const passwordHash = await bcrypt.hash(String(password), BCRYPT_SALT_ROUNDS);
  
-    const result = await userServices.createUser(Sreing(name), String(email), passwordHash, String(phone), roleStr);
+    const result = await userServices.createUser(String(name), String(email), passwordHash, String(phone), roleStr);
 
     return res.status(201).json({
         success: true,
