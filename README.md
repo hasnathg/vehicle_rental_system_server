@@ -71,9 +71,6 @@ This API is built with a **modular architecture** using controllers, services, a
 
 - ### Clone the repository
 
-- ```bash
-
-  ```
 - git clone https://github.com/hasnathg/vehicle_rental_system_server
 - cd vehicle_rental_system_server
 
