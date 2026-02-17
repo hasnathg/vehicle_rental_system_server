@@ -3,6 +3,7 @@ import bcrypt from "bcrypt"
 import { userServices } from "./users.services";
 
 const BCRYPT_SALT_ROUNDS = 10;
+const ALLOWED_ROLES = ["admin", "customer"] as const;
 
 
 const createUser = async(req : Request, res : Response)=>{
@@ -15,11 +16,20 @@ const createUser = async(req : Request, res : Response)=>{
             message: "Validation error",
             errors: "name, email, password, phone, role are required",
         });
-        }   
+        }
+
+        const roleStr = String(role);
+        if (!ALLOWED_ROLES.includes(roleStr as any)) {
+        return res.status(400).json({
+            success: false,
+            message: "Validation error",
+            errors: "role must be 'admin' or 'customer'",
+        });
+        }
 
         const passwordHash = await bcrypt.hash(String(password), BCRYPT_SALT_ROUNDS);
  
-    const result = await userServices.createUser(name, email, passwordHash, phone, role);
+    const result = await userServices.createUser(Sreing(name), String(email), passwordHash, String(phone), roleStr);
 
     return res.status(201).json({
         success: true,
@@ -107,7 +117,17 @@ const updateUser = async(req: Request, res: Response) => {
         if (name !== undefined) payload.name = String(name);
         if (email !== undefined) payload.email = String(email);
         if (phone !== undefined) payload.phone = String(phone);
-        if (role !== undefined) payload.role = String(role);
+        if (role !== undefined){
+            const roleStr = String(role);
+      if (!ALLOWED_ROLES.includes(roleStr as any)) {
+        return res.status(400).json({
+          success: false,
+          message: "Validation error",
+          errors: "role must be 'admin' or 'customer'",
+        });
+      }
+       payload.role = roleStr;
+        }
 
         if (password !== undefined && String(password).length > 0) {
         payload.passwordHash = await bcrypt.hash(String(password), BCRYPT_SALT_ROUNDS);
@@ -124,7 +144,7 @@ const updateUser = async(req: Request, res: Response) => {
         } 
         return res.status(200).json({
                 success: true,
-                message: "User updated succesfully",
+                message: "User updated successfully",
                 data: result,
             });
         

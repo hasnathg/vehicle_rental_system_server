@@ -144,9 +144,8 @@ const updateBooking = async(req: Request, res: Response) => {
     }
 
 
-        const result = await bookingServices.updateBookingScoped(bookingId,  statusStr,
-      user.role,
-      user.id) ;
+    const result = await bookingServices.updateBookingScoped(bookingId,  statusStr,
+      user.role, user.id) ;
 
         if(!result){
             return res.status(404).json({

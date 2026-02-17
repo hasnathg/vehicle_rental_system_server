@@ -7,6 +7,7 @@ import config from "../../config";
 import { authServices } from "./auth.services";
 
 const BCRYPT_SALT_ROUNDS = 10;
+const ALLOWED_ROLES = ["admin", "customer"] as const;
 
 function mustGetJwtSecret(): string {
   if (!config.jwt_secret) {
@@ -28,7 +29,7 @@ const signup = async (req: Request, res: Response) => {
     }
 
     const roleStr = String(role);
-    if (roleStr !== "admin" && roleStr !== "customer") {
+    if (roleStr !== "admin" && roleStr !== "customer")  {
       return res.status(400).json({
         success: false,
         message: "Validation error",
@@ -40,10 +41,10 @@ const signup = async (req: Request, res: Response) => {
     const passwordHash = await bcrypt.hash(String(password), BCRYPT_SALT_ROUNDS);
 
     const result = await authServices.createUser(
-      name,
-      email,
+      String(name),
+      String(email),
       passwordHash,
-      phone,
+      String(phone),
       roleStr
     );
 
